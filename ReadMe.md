@@ -1,17 +1,19 @@
-# Ejemplo de archivo .md
+# Bayessian Classifier
 
-Este repositorio contiene algoritmos correspondientes a la implementacion 
-de un clasificador Bayesiano, el proposito consiste en discriminar entre 
-tres clases designadas de la siguiente manera
+This repository contains algorithms corresponding to the implementation
+of a Bayesian classifier, whose purpose is to discriminate between 
+three classes designated as follows:
 
-class	---	angle (deg)
+
+class	---	angle (degree)
 ===========================
 1	---	8
 2	---	16
 3	---	25
 
-donde cada angulo corresponde a la inclinacion de diferentes barrenados
-realizados sobre una pieza de acrilico, se capturaron señales ultrasonicas de 
-manera aleatoria, usando dos tipos de frecuencias 5 y 15 MHz, capturando un 
-total de 100 señales por muestra (50 por cada transductor)
+where each angle corresponds to the inclination of different drill holes
+made on a piece of acrylic, ultrasonic signals were captured randomly, 
+using two types of frequencies, 5 and 15 MHz, capturing a total of 
+100 signals per sample (50 per transducer).
+
 
