@@ -20,7 +20,7 @@ t = df.iloc[:, 0]
 # Tomar el resto de señales almacenadas en un DataFrame, manteniendo un formato matricial
 y = df.iloc[:, 1:51]
 
-n_signals = np.size(y, 2)
+n_signals = y.shape[1]
 
 #%% Visualización
 
@@ -115,8 +115,7 @@ Features = pd.DataFrame({
     'energy': energy,
     'correlation': correlation,
     'dissimilarity': dissimilarity
-})
-
+}, index= [f"signal {i+1}" for i in range(n_signals)])
 
 #%% Visualizar esta cosa bien locochona
 
