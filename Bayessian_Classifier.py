@@ -23,9 +23,6 @@ print(finalDf.head())
 
 #%% Separate features and labels
 
-# Initialize CountVectorizer
-#vectorizer = CountVectorizer()
-
 # Transform text data into feature vectors
 X = finalDf[['principal component 1', 'principal component 2']]
 
@@ -33,7 +30,7 @@ scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)   # escalar antes de PCA
 
 le = LabelEncoder()
-y_encoded = le.fit_transform(y)  # → 0, 1, 2
+y_encoded = le.fit_transform(Features['Class'])#y)  # → 0, 1, 2
 
 # Split the data
 X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
@@ -53,6 +50,19 @@ y_pred = Gauss_classifier.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 conf_matrix = confusion_matrix(y_test, y_pred)
 class_report = classification_report(y_test, y_pred)
+
+classes = le.classes_  # ← orden que tú quieras
+
+plt.figure()
+sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='RdBu',
+            xticklabels=classes, yticklabels=classes, linewidths=.5, square=True)
+plt.title("Confusion Matrix", fontsize=14)
+plt.xlabel("Predict")
+plt.ylabel("Real")
+plt.tight_layout()
+plt.show()
+
+
 
 print(f'Accuracy: {accuracy}')
 print(f'Confusion Matrix:\n{conf_matrix}')

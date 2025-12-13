@@ -118,7 +118,18 @@ from sklearn.preprocessing import StandardScaler
 
 features = Features.columns.tolist()[:-1]
 
-# Separating out the features
+#%%  Analisis a partir de la matriz de correlación
+
+import seaborn as sns
+
+R = Features[features].corr(min_periods=3)
+
+plt.figure(figsize=(8,8))
+sns.heatmap(R, annot = True, fmt='g', cmap='coolwarm')
+plt.title("Correlation Matrix")
+plt.show()
+
+#%% Separating out the features
 x = Features.loc[:, features].values
 
 # Separating out the target
@@ -126,6 +137,51 @@ y = Features.loc[:,['Class']].values
 
 # Standardizing the features
 x = StandardScaler().fit_transform(x)
+
+#%% Criterio de selección de número de componentes
+
+from sklearn.decomposition import PCA
+
+# PCA con todos los componentes posibles (5 en este caso)
+pca_full = PCA()
+pca_full.fit(x)  # x son los datos ya estandarizados
+
+# Varianza explicada por cada componente
+explained_variance_ratio = pca_full.explained_variance_ratio_
+cumulative_variance = np.cumsum(explained_variance_ratio)
+
+# Imprimir valores
+print("Varianza explicada por cada componente:")
+for i, var in enumerate(explained_variance_ratio):
+    print(f"Componente {i+1}: {var:.4f} ({var*100:.2f}%)")
+
+print("\nVarianza acumulada:")
+for i, cum in enumerate(cumulative_variance):
+    print(f"Hasta componente {i+1}: {cum:.4f} ({cum*100:.2f}%)")
+
+# Grafica 1: Scree plot
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+plt.plot(range(1, len(explained_variance_ratio)+1), explained_variance_ratio, 'o-')
+plt.title('Scree Plot (Varianza explicada por componente)')
+plt.xlabel('Número de componente')
+plt.ylabel('Varianza explicada')
+plt.grid(True)
+
+# Grafica 2: Varianza acumulada
+plt.subplot(1, 2, 2)
+plt.plot(range(1, len(cumulative_variance)+1), cumulative_variance, 'o-')
+plt.axhline(y=0.90, color='r', linestyle='--', label='90%')
+plt.axhline(y=0.85, color='orange', linestyle='--', label='85%')
+plt.title('Varianza acumulada')
+plt.xlabel('Número de componentes')
+plt.ylabel('Proporción acumulada de varianza')
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()
 
 #%% Implementar PCA
 
@@ -160,6 +216,38 @@ for target, color in zip(targets,colors):#features
     indicesToKeep = finalDf['Class'] == target
     ax.scatter(finalDf.loc[indicesToKeep, 'principal component 1']
                , finalDf.loc[indicesToKeep, 'principal component 2']
+               , c = color
+               , s = 50)
+ax.legend(targets)#features)
+ax.grid()
+plt.show()
+
+#%% Datos Normalizados
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(principalComponents)   # escalar antes de PCA
+
+XDf = pd.DataFrame(data = X_scaled
+             , columns = ['principal component 1', 'principal component 2'])
+
+XDf['Class'] = Features['Class'].values
+
+#%% Visualizacion
+
+fig = plt.figure(figsize = (8,8))
+ax = fig.add_subplot(1,1,1) 
+ax.set_xlabel('Principal Component 1', fontsize = 15)
+ax.set_ylabel('Principal Component 2', fontsize = 15)
+ax.set_title('2 component PCA', fontsize = 20)
+
+Xtargets = XDf['Class'].unique()
+
+colors = ['r', 'g', 'b'][:len(Xtargets)]
+
+for target, color in zip(Xtargets,colors):#features
+    indicesToKeep = XDf['Class'] == target
+    ax.scatter(XDf.loc[indicesToKeep, 'principal component 1']
+               , XDf.loc[indicesToKeep, 'principal component 2']
                , c = color
                , s = 50)
 ax.legend(targets)#features)
