@@ -124,8 +124,9 @@ import seaborn as sns
 
 R = Features[features].corr(min_periods=3)
 
-plt.figure(figsize=(8,8))
-sns.heatmap(R, annot = True, fmt='g', cmap='coolwarm')
+plt.figure()
+sns.heatmap(R, annot = True, fmt='.2f', cmap='coolwarm',
+            linewidths=.5, square=True)         
 plt.title("Correlation Matrix")
 plt.show()
 
