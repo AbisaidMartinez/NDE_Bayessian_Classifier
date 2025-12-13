@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Dec 11 10:49:16 2025
+Created on Sat Dec 13 00:33:17 2025
 
 @author: qbo28
 """
@@ -8,42 +8,41 @@ Created on Thu Dec 11 10:49:16 2025
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import pywt
+from scipy import signal
 from skimage.feature import graycomatrix, graycoprops
 
-def Extract_Features(filename,
-        n_signals=50,
-        widths=np.arange(1, 31),
-        wavelet='mexh',
-        distances=[1],
-        angles=[0]
+def Extract_Features_STFT(filename,
+                          n_signals=50,
+                          nperseg=256,  # ventana para STFT (ajustable)
+                          noverlap=128, # overlap para mejor resolución
+                          distances=[1],
+                          angles=[0],
+                          fs=None  # si no se da, se calcula del tiempo
     ):
     """
-    Extrae características GLCM a partir de la transformada wavelet continua (CWT) 
-    de múltiples señales almacenadas en un archivo CSV.
-
+    Extrae características GLCM a partir de STFT de múltiples señales.
+    
     Parámetros:
         filename: ruta del archivo .csv
         n_signals: número de señales (columnas) a procesar
-        widths: anchos escalares para la CWT
-        wavelet: tipo de wavelet de pywt
+        nperseg: longitud de la ventana para STFT
+        noverlap: overlap entre ventanas
         distances: distancias para el GLCM
         angles: ángulos para el GLCM en radianes
-    
+        fs: frecuencia de muestreo (si None, se calcula del tiempo)
+        
     Retorna:
         DataFrame con contrast, homogeneity, energy, correlation y dissimilarity
     """
     
-        # --- Cargar archivo ---
+    # --- Cargar archivo ---
     df = pd.read_csv(filename)
-    y = df.iloc[:, 1:n_signals+1]   # señales en columnas 1..n
+    y = df.iloc[:, 1:n_signals+1]  # señales en columnas 1..n
     
-    # --- CWT ---
-    CWT_all = np.zeros((n_signals, len(widths), y.shape[0]))
-    
-    for i in range(n_signals):
-        cwt_result = pywt.cwt(y.iloc[:, i], widths, wavelet)[0]
-        CWT_all[i, :, :] = np.abs(cwt_result)
+    # Calcular fs si no se proporciona
+    if fs is None:
+        dt = df.iloc[1, 0] - df.iloc[0, 0]  # asumiendo que tiempo está en columna 0
+        fs = 1 / dt
     
     # --- Inicializar características ---
     contrast = np.zeros(n_signals)
@@ -52,25 +51,65 @@ def Extract_Features(filename,
     correlation = np.zeros(n_signals)
     dissimilarity = np.zeros(n_signals)
     
-    # --- GLCM ---
-    for i in range(n_signals):
-        image = CWT_all[i, :, :]
-        image = (image / image.max() * 255).astype(np.uint8)
+    print(f"Procesando {n_signals} señales con STFT (fs={fs:.2f} Hz, nperseg={nperseg})")
     
+    # --- STFT + GLCM para cada señal ---
+    for i in range(n_signals):
+        # Calcular STFT
+        f, t_stft, Zxx = signal.stft(y.iloc[:, i], 
+                                   fs=fs, 
+                                   nperseg=nperseg, 
+                                   noverlap=noverlap,
+                                   window='hann')  # ventana de Hann para mejor resolución
+        
+        # --- TRANSFORMACIÓN LOGARÍTMICA + NORMALIZACIÓN (CLAVE) ---
+        # 1. Convertir a dB (escala logarítmica)
+        Zxx_db = 20 * np.log10(np.abs(Zxx) + 1e-10)  # +1e-10 para evitar log(0)
+        
+        # 2. Recortar valores extremos para reducir el padding
+        Zxx_db = np.clip(Zxx_db, -60, 0)  # recortar entre -60dB y 0dB
+        
+        # 3. Normalizar a [0, 255]
+        Zxx_norm = (Zxx_db - Zxx_db.min()) / (Zxx_db.max() - Zxx_db.min()) * 255
+        image = Zxx_norm.astype(np.uint8)
+        
+        # --- Visualización opcional (comenta si no la quieres) ---
+        # plt.figure(figsize=(8, 6))
+        # plt.pcolormesh(t_stft, f, np.abs(Zxx), cmap='viridis', shading='gouraud')
+        # plt.title(f"STFT Original - Señal {i+1}")
+        # plt.ylim([0, fs/2 * 0.1])  # 10% de la frecuencia de Nyquist
+        # plt.ylabel("Frecuencia [Hz]")
+        # plt.xlabel("Tiempo [s]")
+        # plt.colorbar(label='Magnitud')
+        # plt.show()
+        
+        # plt.figure(figsize=(8, 6))
+        # plt.pcolormesh(t_stft, f, image, cmap='gray', shading='gouraud')
+        # plt.title(f"STFT Normalizada para GLCM - Señal {i+1}")
+        # plt.ylim([0, fs/2 * 0.1])
+        # plt.ylabel("Frecuencia [Hz]")
+        # plt.xlabel("Tiempo [s]")
+        # plt.colorbar(label='Intensidad [0-255]')
+        # plt.show()
+        
+        # --- Calcular GLCM ---
         glcm = graycomatrix(image,
                             distances=distances,
                             angles=angles,
                             levels=256,
                             symmetric=True,
                             normed=True)
+        
+        # Extraer propiedades
+        contrast[i] = graycoprops(glcm, 'contrast')#.mean()
+        homogeneity[i] = graycoprops(glcm, 'homogeneity')#.mean()
+        energy[i] = graycoprops(glcm, 'energy')#.mean()
+        correlation[i] = graycoprops(glcm, 'correlation')#.mean()
+        dissimilarity[i] = graycoprops(glcm, 'dissimilarity')#.mean()
+        
+        #print(f"Señal {i+1}: Contrast={contrast[i]:.2f}, Energy={energy[i]:.2f}")
     
-        contrast[i]      = graycoprops(glcm, 'contrast')
-        homogeneity[i]   = graycoprops(glcm, 'homogeneity')
-        energy[i]        = graycoprops(glcm, 'energy')
-        correlation[i]   = graycoprops(glcm, 'correlation')
-        dissimilarity[i] = graycoprops(glcm, 'dissimilarity')
-    
-    # --- Matriz final ---
+    # --- DataFrame final ---
     Features = pd.DataFrame({
         'contrast': contrast,
         'homogeneity': homogeneity,
@@ -81,20 +120,20 @@ def Extract_Features(filename,
     
     return Features
 
-Feature01 = Extract_Features("Class_1_5MHz.csv")
-Feature02 = Extract_Features("Class_1_15MHz.csv")
+Feature01 = Extract_Features_STFT("Class_1_5MHz.csv")
+Feature02 = Extract_Features_STFT("Class_1_15MHz.csv")
 
 Features01 = pd.concat([Feature01, Feature02])
 Features01['Class'] = 'Class_1'
 
-Feature03 = Extract_Features("Class_2_5MHz.csv")
-Feature04 = Extract_Features("Class_2_15MHz.csv")
+Feature03 = Extract_Features_STFT("Class_2_5MHz.csv")
+Feature04 = Extract_Features_STFT("Class_2_15MHz.csv")
 
 Features02 = pd.concat([Feature03, Feature04])
 Features02['Class'] = 'Class_2'
 
-Feature05 = Extract_Features("Class_3_5MHz.csv")
-Feature06 = Extract_Features("Class_3_15MHz.csv")
+Feature05 = Extract_Features_STFT("Class_3_5MHz.csv")
+Feature06 = Extract_Features_STFT("Class_3_15MHz.csv")
 
 Features03 = pd.concat([Feature05, Feature06])
 Features03['Class'] = 'Class_3'
