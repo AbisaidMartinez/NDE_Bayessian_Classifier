@@ -299,6 +299,16 @@ ax.grid()
 # 4. Display the plot
 plt.show()
 
+#%% Visualizacion con curvas de nivel
+
+sns.jointplot(
+    data=principalDf,
+    x="principal component 1", y="principal component 2",
+    hue="Class", kind="kde"
+)
+
+#%%
+sns.pairplot(principalDf)
 
 #%% Datos Normalizados
 
@@ -330,4 +340,66 @@ for target, color in zip(Xtargets,colors):#features
                , s = 50)
 ax.legend(targets)#features)
 ax.grid()
+plt.show()
+
+#%%
+
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.patches import Ellipse
+from scipy.stats import multivariate_normal
+
+# Supongamos que principalDf tiene columnas: 'principal component 1', 'principal component 2', 'principal component 3', 'Class'
+
+fig = plt.figure(figsize=(10,8))
+ax = fig.add_subplot(111, projection='3d')
+
+# Colores para las clases
+colors = ['red', 'blue', 'green', 'orange', 'purple']
+targets = principalDf['Class'].unique()
+
+for target, color in zip(targets, colors):
+    subset = principalDf[principalDf['Class'] == target]
+    
+    # Graficar los puntos de cada clase
+    ax.scatter(subset['principal component 1'],
+               subset['principal component 2'],
+               subset['principal component 3'],
+               c=color, label=target, s=40, alpha=0.6)
+    
+    # Calcular media y covarianza
+    data = subset[['principal component 1',
+                   'principal component 2',
+                   'principal component 3']].values
+    mean = np.mean(data, axis=0)
+    cov = np.cov(data, rowvar=False)
+    
+    # Autovalores y autovectores
+    eigvals, eigvecs = np.linalg.eigh(cov)
+    
+    # Generar puntos de esfera
+    u = np.linspace(0, 2*np.pi, 30)
+    v = np.linspace(0, np.pi, 30)
+    x = np.outer(np.cos(u), np.sin(v))
+    y = np.outer(np.sin(u), np.sin(v))
+    z = np.outer(np.ones_like(u), np.cos(v))
+    sphere = np.stack((x, y, z), axis=-1)
+    
+    # Escalar por autovalores (radio ~ sqrt(eigval))
+    radii = np.sqrt(eigvals)
+    ellipsoid = sphere @ np.diag(radii) @ eigvecs.T + mean
+    
+    # Dibujar superficie del elipsoide
+    ax.plot_wireframe(ellipsoid[:,:,0],
+                      ellipsoid[:,:,1],
+                      ellipsoid[:,:,2],
+                      color=color, alpha=0.2)
+
+# Etiquetas y leyenda
+ax.set_xlabel('PC1')
+ax.set_ylabel('PC2')
+ax.set_zlabel('PC3')
+ax.legend()
+plt.title("PCA 3D con elipsoides gaussianos por clase")
 plt.show()

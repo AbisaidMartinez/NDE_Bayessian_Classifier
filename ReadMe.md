@@ -16,4 +16,6 @@ made on a piece of acrylic, ultrasonic signals were captured randomly,
 using two types of frequencies, 5 and 15 MHz, capturing a total of 
 100 signals per sample (50 per transducer).
 
+On STFT_imp Branch, this feature extraction was implemented using STFT with 3 
+principal components, to obtain the Bayessian Classifier
 
