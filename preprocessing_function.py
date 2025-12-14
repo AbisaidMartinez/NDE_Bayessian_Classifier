@@ -248,6 +248,19 @@ principalDf['Class'] = Features['Class'].values
 finalDf = principalDf
 #pd.concat([principalDf, Features[['Class']]], axis = 1)
 
+#%%  Analisis a partir de la matriz de correlación
+
+import seaborn as sns
+
+r = principalDf[['principal component 1', 'principal component 2', 'principal component 3']].corr(min_periods=3)
+
+plt.figure()
+sns.heatmap(r, annot = True, fmt='.2f', cmap='coolwarm',
+            linewidths=.5, square=True)         
+plt.title("Correlation Matrix")
+plt.show()
+
+
 #%% Visualizacion
 
 fig = plt.figure(figsize = (8,8))
@@ -300,6 +313,7 @@ ax.grid()
 plt.show()
 
 #%% Visualizacion con curvas de nivel
+import seaborn as sns
 
 sns.jointplot(
     data=principalDf,
