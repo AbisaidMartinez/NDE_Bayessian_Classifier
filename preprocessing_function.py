@@ -200,6 +200,19 @@ principalDf['Class'] = Features['Class'].values
 finalDf = principalDf
 #pd.concat([principalDf, Features[['Class']]], axis = 1)
 
+#%% Visualizacion con curvas de nivel
+
+import seaborn as sns
+
+sns.jointplot(
+    data=principalDf,
+    x="principal component 1", y="principal component 2",
+    hue="Class", kind="kde")
+
+#%%
+sns.pairplot(principalDf)
+
+
 #%% Visualizacion
 
 fig = plt.figure(figsize = (8,8))
