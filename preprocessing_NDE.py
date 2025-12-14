@@ -12,7 +12,7 @@ from scipy import signal
 import pywt
 
 # Cargar el archivo .csv en un DataFrame
-df = pd.read_csv('Class_2_5MHz.csv')
+df = pd.read_csv('Class_1_15MHz.csv')
 
 # Acceder a la primera columna
 t = df.iloc[:, 0]
@@ -27,10 +27,10 @@ n_signals = y.shape[1]
 plt.figure(1)
 
 # Observar las señales obtenidas
-for i in range(n_signals):    
+for i in range(10):#n_signals):    
     plt.plot(t,y.iloc[:,i] + i/2)
     
-plt.title("Experimental Signal")
+plt.title("Experimental Signals")
 plt.xlabel("time [s]")
 plt.ylabel("y(t)")
 plt.grid()
@@ -66,13 +66,14 @@ for i in range(n_signals):
     cwt_result = pywt.cwt(y.iloc[:,i], widths, 'mexh')[0]
     CWT_all[i, :, :] = np.abs(cwt_result)
     
-    #plt.imshow(np.abs(cwt_result), extent=[0, t.iloc[-1], widths[-1], widths[0]],
-    #           cmap='gray', aspect='auto',
-    #           vmax=abs(cwt_result).max(), vmin=-abs(cwt_result).max())
-    #plt.title(["CWT of signal ",i ,"with Mexican Hat Wavelet"])
-    #plt.xlabel("Time [s]")
-    #plt.ylabel("Width (Scale)")
-    #plt.show()
+    plt.figure()
+    plt.imshow(CWT_all[i, :, :], extent=[0, t.iloc[-1], widths[-1], widths[0]],
+              cmap='gray', aspect='auto',
+              vmax=abs(CWT_all[i, :, :]).max(), vmin=-abs(CWT_all[i, :, :]).max())
+    plt.title(f"CWT of signal {i+1} with Mexican Hat Wavelet")
+    plt.xlabel("Time [s]")
+    plt.ylabel("Width (Scale)")
+    plt.show()
 
 #%% Aqui implementamos GLCM 
 
