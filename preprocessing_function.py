@@ -63,6 +63,12 @@ def Extract_Features_STFT(filename,
                                    window='hann')  # ventana de Hann para mejor resolución
         
         # --- TRANSFORMACIÓN LOGARÍTMICA + NORMALIZACIÓN (CLAVE) ---
+        f_max = 1e7  # ejemplo: hasta 10 MHz
+        mask = f <= f_max
+
+        # Recortar tanto f como Zxx_norm
+        f_cut = f[mask]
+        
         # 1. Convertir a dB (escala logarítmica)
         Zxx_db = 20 * np.log10(np.abs(Zxx) + 1e-10)  # +1e-10 para evitar log(0)
         
@@ -71,7 +77,9 @@ def Extract_Features_STFT(filename,
         
         # 3. Normalizar a [0, 255]
         Zxx_norm = (Zxx_db - Zxx_db.min()) / (Zxx_db.max() - Zxx_db.min()) * 255
-        image = Zxx_norm.astype(np.uint8)
+        Zxx_cut = Zxx_norm[mask, :]
+
+        image = Zxx_cut.astype(np.uint8)
         
         # --- Visualización opcional (comenta si no la quieres) ---
         # plt.figure(figsize=(8, 6))
@@ -84,7 +92,7 @@ def Extract_Features_STFT(filename,
         # plt.show()
         
         # plt.figure(figsize=(8, 6))
-        # plt.pcolormesh(t_stft, f, image, cmap='gray', shading='gouraud')
+        # plt.pcolormesh(t_stft, f_cut, image, cmap='gray', shading='gouraud')
         # plt.title(f"STFT Normalizada para GLCM - Señal {i+1}")
         # plt.ylim([0, fs/2 * 0.1])
         # plt.ylabel("Frecuencia [Hz]")
@@ -227,12 +235,12 @@ plt.show()
 
 from sklearn.decomposition import PCA
 
-pca = PCA(n_components=2)
+pca = PCA(n_components=3)
 
 principalComponents = pca.fit_transform(x)
 
 principalDf = pd.DataFrame(data = principalComponents
-             , columns = ['principal component 1', 'principal component 2'])
+             , columns = ['principal component 1', 'principal component 2', 'principal component 3'])
 
 #%%
 principalDf['Class'] = Features['Class'].values
@@ -261,6 +269,36 @@ for target, color in zip(targets,colors):#features
 ax.legend(targets)#features)
 ax.grid()
 plt.show()
+
+#%% Grafica 3D
+
+from mpl_toolkits.mplot3d import Axes3D
+
+# 2. Create the figure and 3D axes
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d') # or ax = plt.axes(projection='3d')
+
+# 3. Plot the scatter points
+targets = principalDf['Class'].unique()
+
+colors = ['red', 'blue', 'green']
+
+for target, color in zip(targets, colors):
+    subset = principalDf[principalDf['Class'] == target]
+    ax.scatter(subset['principal component 1'],
+               subset['principal component 2'],
+               subset['principal component 3'],
+               c=color, label=target, s=50)
+
+# Optional: Add labels
+ax.set_xlabel('PC1')
+ax.set_ylabel('PC2')
+ax.set_zlabel('PC3')
+ax.legend(targets)
+ax.grid()
+# 4. Display the plot
+plt.show()
+
 
 #%% Datos Normalizados
 

@@ -46,13 +46,30 @@ stfts = []
 
 for i in range(n_signals):
     f, t_seg, Zxx = signal.stft(y.iloc[:, i], fs, nperseg=999)
-    stfts.append((f, t_seg, Zxx))
+    
+    f_max = 1e7  # ejemplo: hasta 10 MHz
+    mask = f <= f_max
+
+    # Recortar tanto f como Zxx_norm
+    f_cut = f[mask]
+    
+    # 1. Convertir a dB (escala logarítmica)
+    Zxx_db = 20 * np.log10(np.abs(Zxx) + 1e-10)  # +1e-10 para evitar log(0)
+    
+    # 2. Recortar valores extremos para reducir el padding
+    Zxx_db = np.clip(Zxx_db, -60, 0)  # recortar entre -60dB y 0dB
+    
+    # 3. Normalizar a [0, 255]
+    Zxx_norm = (Zxx_db - Zxx_db.min()) / (Zxx_db.max() - Zxx_db.min()) * 255
+    Zxx_cut = Zxx_norm[mask, :]
+
+    stfts.append((f_cut, t_seg, Zxx_cut))
 
 for f, t_seg, Zxx in stfts: 
     plt.figure()
-    plt.pcolormesh(t_seg, f, np.abs(Zxx), cmap='gray', shading = 'gouraud')
+    plt.pcolormesh(t_seg, f_cut, np.abs(Zxx_cut), cmap='gray', shading = 'gouraud')
     plt.title("STFT Experimental Magnitude")
-    plt.ylim([0, 0.1e8])
+    #plt.ylim([0, 0.1e8])
     plt.ylabel("Frequency [Hz]")
     plt.xlabel("Time [s]")
     plt.show()
