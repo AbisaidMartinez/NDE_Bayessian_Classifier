@@ -204,10 +204,16 @@ finalDf = principalDf
 
 import seaborn as sns
 
+palette_rgb = {
+    "Class_1": (255/255, 0/255, 0/255),   # rojo
+    "Class_2": (0/255, 255/255, 0/255),   # verde
+    "Class_3": (0/255, 0/255, 255/255)    # azul
+}
+
 sns.jointplot(
     data=principalDf,
     x="principal component 1", y="principal component 2",
-    hue="Class", kind="kde")
+    hue="Class", kind="kde", palette=palette_rgb)
 
 #%%
 sns.pairplot(principalDf)
